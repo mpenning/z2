@@ -97,9 +97,9 @@ def find_git_branch_name(filepath=None) -> str:
     this_dir = os.getcwd()
 
     git_branch = ""
-    os.chdir(filepath_dir)
+    os.chdir(filepath_dir or "./")  # or condition to handle an empty filepath
     vals = run_cmd_popen("git branch --show-current")
-    os.chdir(this_dir)
+    os.chdir(this_dir or "./")      # or condition to handle an empty filepath
 
     if len(vals["stderr"]) > 0 and "not a git repository" in vals["stderr"][0]:
         # You're not in a git branch... return ""
