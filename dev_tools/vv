@@ -1,0 +1,188 @@
+#!/usr/bin/env python
+
+"""
+vv: a vim wrapper that warns you if you try to edit git master or git main.
+
+I have a pre-commit hook to prevent direct commits to git master, but it's
+better to not make changes on master in the first place.
+
+This vim wrapper warns you before making master branch edits.
+
+I went out of my way to write this with only python3 stdlib dependencies.
+"""
+
+from six.moves import input as six_input
+from subprocess import Popen, PIPE
+import subprocess as subproc
+import shlex
+import sys
+import os
+
+
+def vim_write_mode():
+    """Return True if vim is in read-write mode"""
+    assert len(sys.argv) > 0
+
+    cmd_name = sys.argv[0].split("/")[-1]
+    if cmd_name == "vim" or cmd_name == "vi" or cmd_name == "vv":
+        if "-R" in set(sys.argv[1:]):
+            return False
+        return True
+
+    raise OSError("Not using vi or vim")
+
+
+def run_vim(vals: str = None) -> None:
+    assert vals is None
+
+    # If a filename or args are specified from the cli...
+    if len(sys.argv) > 1:
+        vv = sys.argv[1:]
+        # Replace __file__ with 'vim' in sys.argv[0]...
+        vv.insert(0, "vim")
+
+        # Run vim and do not capture stdout...
+        os.system(" ".join(vv))
+
+    else:
+        # Run vim and do not capture stdout...
+        os.system("vim")
+
+
+def log_level_string(log_level: str = None):
+    assert isinstance(log_level, str)
+    color_dict = {
+        "TRACE": 0,
+        "DEBUG": 1,
+        "INFO": 2,
+        "SUCCESS": 3,
+        "WARNING": 4,
+        "ERROR": 5,
+        "CRITICAL": 6,
+    }
+    assert log_level.upper() in set(color_dict.keys())
+
+    return "\u001b[37;1m" + "[" + log_level.upper() + "]" + "\033[0m"
+
+
+def run_cmd_popen(cmd: str = None, shell: str = None, cwd: str="./") -> dict:
+    """
+    Run a shell command with Popen() and return stdout / stderr in a dict().
+    """
+    assert isinstance(cmd, str)
+    assert len(cmd.splitlines()) == 1
+
+    cmd_parts = shlex.split(cmd)
+    git_branch_proc = Popen(
+        cmd_parts, stdout=PIPE, stderr=PIPE, shell=None, encoding="utf-8", cwd="./",
+    )
+    stdout, stderr = git_branch_proc.communicate()
+    retval = {
+        "cmd": cmd,
+        "stdout": stdout.splitlines(),
+        "stderr": stderr.splitlines(),
+    }
+    return retval
+
+
+def find_git_branch_name(filepath=None) -> str:
+    """
+    Return the git branch name of the git repo that filepath is in.
+
+    If it's not in a git repo, return "".
+    """
+    assert filepath is not None
+
+    filepath_dir = "/".join(filepath.split("/")[:-1])
+    this_dir = os.getcwd()
+
+    git_branch = ""
+    os.chdir(filepath_dir)
+    vals = run_cmd_popen("git branch --show-current")
+    os.chdir(this_dir)
+
+    if len(vals["stderr"]) > 0 and "not a git repository" in vals["stderr"][0]:
+        # You're not in a git branch... return ""
+        pass
+
+    elif len(vals["stdout"]) == 1:
+        git_branch = vals["stdout"][0].strip()
+
+    else:
+        raise ValueError("Unknown return values: %s" % vals)
+
+    return git_branch
+
+
+def confirm_vim_edit_if_master(vals: str = None) -> None:
+    """
+    Direct commits to master are taboo and often a bad idea... for instance,
+    what if two people direct commit simultaneously to the same file in master?
+
+    other discussion here -> https://stackoverflow.com/a/45791560/667301
+    """
+    assert vals is None
+
+    WARNING = "\033[93m"
+    BOLD_CYAN = "\u001b[36;1m"
+    BOLD_YELLOW = "\u001b[33;1m"
+    BOLD_WHITE = "\u001b[37;1m"
+    BLINK_BOLD_YELLOW = "\u001b[33;5m"
+    ENDC = "\033[0m"
+
+    git_branch = find_git_branch_name(filepath=sys.argv[-1])
+    if vim_write_mode() and (git_branch in set({"main", "master"})):
+
+        warning_message = "{5} You are going to modify file '{0}{1}{4}' on the {2}git {3}{4} branch.".format(
+            BOLD_CYAN,
+            sys.argv[-1],
+            BOLD_YELLOW,
+            git_branch,
+            ENDC,
+            log_level_string("warning"),
+        )
+        print(warning_message)
+        # https://stackoverflow.com/a/56373231/667301
+        answer = (
+            six_input("    ^^^ {}Are you sure?{} (yes / no) ".format(BOLD_WHITE, ENDC))
+            .strip()
+            .lower()
+        )
+
+        # Assume any answer other than 'yes' means 'no'
+        if not (answer in set({"yes", "y"})):
+            print("exiting")
+            sys.exit(0)
+
+        else:
+            message = "{5} Editing '{0}{1}{4}' on the {2}git {3}{4} branch.".format(
+                BOLD_CYAN,
+                sys.argv[-1],
+                BOLD_YELLOW,
+                git_branch,
+                ENDC,
+                log_level_string("info"),
+            )
+            print(message)
+            run_vim()
+
+    else:
+        if git_branch != "":
+            message = "{5} Editing '{0}{1}{4}' on the {2}git {3}{4} branch.".format(
+                BOLD_CYAN,
+                sys.argv[-1],
+                BOLD_YELLOW,
+                git_branch,
+                ENDC,
+                log_level_string("info"),
+            )
+        else:
+            message = "{} Editing '{}{}{}'.".format(
+                log_level_string("info"),BOLD_CYAN, sys.argv[-1], ENDC,
+            )
+        print(message)
+        run_vim()
+
+
+if __name__ == "__main__":
+    confirm_vim_edit_if_master()
