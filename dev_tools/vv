@@ -113,6 +113,15 @@ def find_git_branch_name(filepath=None) -> str:
 
     return git_branch
 
+def configure_git_mergetool():
+    """Set up git mergtool to resolve conflicts with vimdiff / diff3"""
+    config = [
+        "git config merge.tool vimdiff",
+        "git config merge.conflictstyle diff3",
+        "git config mergetool.prompt false",
+        ]
+    for cmd_line in config:
+        run_cmd_popen(cmd=cmd_line)
 
 def confirm_vim_edit_if_master(vals: str = None) -> None:
     """
@@ -129,6 +138,9 @@ def confirm_vim_edit_if_master(vals: str = None) -> None:
     BOLD_WHITE = "\u001b[37;1m"
     BLINK_BOLD_YELLOW = "\u001b[33;5m"
     ENDC = "\033[0m"
+
+    # Configure git mergetool
+    configure_git_mergetool()
 
     git_branch = find_git_branch_name(filepath=sys.argv[-1])
     if vim_write_mode() and (git_branch in set({"main", "master"})):
