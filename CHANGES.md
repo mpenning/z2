@@ -1,4 +1,11 @@
 
+Version 0.0.25
+--------------
+
+Released 2022-03-17
+
+- Fix fatal crash on mis-named function call.
+
 Version 0.0.24
 --------------
 
