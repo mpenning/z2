@@ -31,7 +31,7 @@ def getch():
   termios.tcsetattr(fd, termios.TCSANOW, newattr)
 
   oldflags = fcntl.fcntl(fd, fcntl.F_GETFL)
-  fcntl.fcntl(fd, fcntl.F_SETFL, oldflags | os.O_NONBLOCK)
+  fcntl.fcntl(fd, fcntl.F_SETFL, oldflags)
 
   try:
     while 1:
@@ -180,16 +180,13 @@ def confirm_vim_edit_if_master(vals: str = None) -> None:
             log_level_string("warning"),
         )
         print(warning_message)
+        print("    ^^^ {}Are you sure?{} (y / n) ".format(BOLD_WHITE, ENDC))
         # https://stackoverflow.com/a/56373231/667301
-        answer = (
-            #six_input("    ^^^ {}Are you sure?{} (y / n) ".format(BOLD_WHITE, ENDC))
-            getch("    ^^^ {}Are you sure?{} (y / n) ".format(BOLD_WHITE, ENDC))
-            .strip()
-            .lower()
-        )
+        #six_input("    ^^^ {}Are you sure?{} (y / n) ".format(BOLD_WHITE, ENDC))
 
         # Assume any answer other than 'yes' means 'no'
-        if not (answer in set({"yes", "y"})):
+        answer = getch().strip()
+        if not (answer=="y"):
             print("exiting")
             sys.exit(0)
 
