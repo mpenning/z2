@@ -4,7 +4,7 @@ Version 0.0.26
 
 Released 2022-03-17
 
-- Add comment with getchar() credits...
+- Enhance the `getchar()` function to optionally render text before reading user input
 
 Version 0.0.25
 --------------
