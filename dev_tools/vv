@@ -19,7 +19,9 @@ import shlex
 import sys
 import os
 
-
+# I enhanced this but it was a great starting point...
+#     inspiration for the getchar() function:
+#     Ref -> https://stackoverflow.com/a/7259460/667301
 def getchar(text=""):
     """Read a single character from the user"""
     assert isinstance(text, str)
