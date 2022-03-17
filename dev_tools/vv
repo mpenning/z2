@@ -33,7 +33,12 @@ def getchar(text=""):
     oldflags = fcntl.fcntl(fd_stdin, fcntl.F_GETFL)
     fcntl.fcntl(fd_stdin, fcntl.F_SETFL, oldflags)
 
-    print(text.rstrip())
+    # print("this", end="") end param ensures there's no automatic newline...
+    #     Ref -> https://stackoverflow.com/a/493399/667301
+    # Sometimes you need flush() to make the print() work
+    print(text, end="")
+    sys.stdout.flush()
+
     try:
         while True:
             try:
@@ -44,6 +49,10 @@ def getchar(text=""):
     finally:
         termios.tcsetattr(fd_stdin, termios.TCSAFLUSH, oldterm)
         fcntl.fcntl(fd_stdin, fcntl.F_SETFL, oldflags)
+
+    print("")   # Move the cursor back to the far-left of terminal...
+    sys.stdout.flush()
+
     return single_char
 
 
@@ -189,12 +198,10 @@ def confirm_vim_edit_if_master(vals: str = None) -> None:
             log_level_string("warning"),
         )
         print(warning_message)
-        print("    ^^^ {}Are you sure?{} (y / n) ".format(BOLD_WHITE, ENDC))
-        # https://stackoverflow.com/a/56373231/667301
-        # six_input("    ^^^ {}Are you sure?{} (y / n) ".format(BOLD_WHITE, ENDC))
 
-        # Assume any answer other than 'yes' means 'no'
-        answer = getchar().strip()
+        # Confirm that we really want to edit in the master / main branch...
+        confirm_text = "    ^^^ {}Are you sure?{} (y / N) ".format(BOLD_WHITE, ENDC)
+        answer = getchar(confirm_text).strip()
         if not (answer == "y"):
             print("exiting")
             sys.exit(0)
