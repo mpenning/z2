@@ -11,7 +11,6 @@ This vim wrapper warns you before making master branch edits.
 I went out of my way to write this with only python3 stdlib dependencies.
 """
 
-from six.moves import input as six_input
 from subprocess import Popen, PIPE
 import subprocess as subproc
 import termios
@@ -21,28 +20,31 @@ import sys
 import os
 
 
-def getch():
-  """Read a single character from the user"""
-  fd = sys.stdin.fileno()
+def getch(text=""):
+    """Read a single character from the user"""
+    assert isinstance(text, str)
+    fd_stdin = sys.stdin.fileno()
 
-  oldterm = termios.tcgetattr(fd)
-  newattr = termios.tcgetattr(fd)
-  newattr[3] = newattr[3] & ~termios.ICANON & ~termios.ECHO
-  termios.tcsetattr(fd, termios.TCSANOW, newattr)
+    oldterm = termios.tcgetattr(fd_stdin)
+    newattr = termios.tcgetattr(fd_stdin)
+    newattr[3] = newattr[3] & ~termios.ICANON & ~termios.ECHO
+    termios.tcsetattr(fd_stdin, termios.TCSANOW, newattr)
 
-  oldflags = fcntl.fcntl(fd, fcntl.F_GETFL)
-  fcntl.fcntl(fd, fcntl.F_SETFL, oldflags)
+    oldflags = fcntl.fcntl(fd_stdin, fcntl.F_GETFL)
+    fcntl.fcntl(fd_stdin, fcntl.F_SETFL, oldflags)
 
-  try:
-    while 1:
-      try:
-        c = sys.stdin.read(1)
-        break
-      except IOError: pass
-  finally:
-    termios.tcsetattr(fd, termios.TCSAFLUSH, oldterm)
-    fcntl.fcntl(fd, fcntl.F_SETFL, oldflags)
-  return c
+    print(text.rstrip())
+    try:
+        while True:
+            try:
+                single_char = sys.stdin.read(1)
+                break
+            except IOError:
+                pass
+    finally:
+        termios.tcsetattr(fd_stdin, termios.TCSAFLUSH, oldterm)
+        fcntl.fcntl(fd_stdin, fcntl.F_SETFL, oldflags)
+    return single_char
 
 
 def vim_write_mode():
@@ -91,7 +93,7 @@ def log_level_string(log_level: str = None):
     return "\u001b[37;1m" + "[" + log_level.upper() + "]" + "\033[0m"
 
 
-def run_cmd_popen(cmd: str = None, shell: str = None, cwd: str="./") -> dict:
+def run_cmd_popen(cmd: str = None, shell: str = None, cwd: str = "./") -> dict:
     """
     Run a shell command with Popen() and return stdout / stderr in a dict().
     """
@@ -100,7 +102,12 @@ def run_cmd_popen(cmd: str = None, shell: str = None, cwd: str="./") -> dict:
 
     cmd_parts = shlex.split(cmd)
     git_branch_proc = Popen(
-        cmd_parts, stdout=PIPE, stderr=PIPE, shell=None, encoding="utf-8", cwd="./",
+        cmd_parts,
+        stdout=PIPE,
+        stderr=PIPE,
+        shell=None,
+        encoding="utf-8",
+        cwd="./",
     )
     stdout, stderr = git_branch_proc.communicate()
     retval = {
@@ -125,7 +132,7 @@ def find_git_branch_name(filepath=None) -> str:
     git_branch = ""
     os.chdir(filepath_dir or "./")  # or condition to handle an empty filepath
     vals = run_cmd_popen("git branch --show-current")
-    os.chdir(this_dir or "./")      # or condition to handle an empty filepath
+    os.chdir(this_dir or "./")  # or condition to handle an empty filepath
 
     if len(vals["stderr"]) > 0 and "not a git repository" in vals["stderr"][0]:
         # You're not in a git branch... return ""
@@ -139,15 +146,17 @@ def find_git_branch_name(filepath=None) -> str:
 
     return git_branch
 
+
 def configure_git_mergetool():
     """Set up git mergtool to resolve conflicts with vimdiff / diff3"""
     config = [
         "git config merge.tool vimdiff",
         "git config merge.conflictstyle diff3",
         "git config mergetool.prompt false",
-        ]
+    ]
     for cmd_line in config:
         run_cmd_popen(cmd=cmd_line)
+
 
 def confirm_vim_edit_if_master(vals: str = None) -> None:
     """
@@ -182,11 +191,11 @@ def confirm_vim_edit_if_master(vals: str = None) -> None:
         print(warning_message)
         print("    ^^^ {}Are you sure?{} (y / n) ".format(BOLD_WHITE, ENDC))
         # https://stackoverflow.com/a/56373231/667301
-        #six_input("    ^^^ {}Are you sure?{} (y / n) ".format(BOLD_WHITE, ENDC))
+        # six_input("    ^^^ {}Are you sure?{} (y / n) ".format(BOLD_WHITE, ENDC))
 
         # Assume any answer other than 'yes' means 'no'
-        answer = getch().strip()
-        if not (answer=="y"):
+        answer = getchar().strip()
+        if not (answer == "y"):
             print("exiting")
             sys.exit(0)
 
@@ -214,7 +223,10 @@ def confirm_vim_edit_if_master(vals: str = None) -> None:
             )
         else:
             message = "{} Editing '{}{}{}'.".format(
-                log_level_string("info"),BOLD_CYAN, sys.argv[-1], ENDC,
+                log_level_string("info"),
+                BOLD_CYAN,
+                sys.argv[-1],
+                ENDC,
             )
         print(message)
         run_vim()
