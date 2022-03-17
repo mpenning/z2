@@ -20,7 +20,7 @@ import sys
 import os
 
 
-def getch(text=""):
+def getchar(text=""):
     """Read a single character from the user"""
     assert isinstance(text, str)
     fd_stdin = sys.stdin.fileno()
