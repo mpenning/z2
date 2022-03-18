@@ -1,4 +1,13 @@
 
+Version 0.0.27
+--------------
+
+Released 2022-03-18
+
+- Add `getchar()` to `z2.strings`
+- Enhance the `getchar()` function to print a prompt message
+- Enhance the `getchar()` function to allow a subset of character inputs
+
 Version 0.0.26
 --------------
 
