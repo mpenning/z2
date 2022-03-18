@@ -1,4 +1,6 @@
 from __future__ import annotations
+import termios
+import fcntl
 import sys
 
 from loguru import logger
@@ -44,6 +46,58 @@ class Color:
 
     # End the colors...
     ENDC = "\033[0m"
+
+#     Ref -> https://stackoverflow.com/a/7259460/667301
+def getchar(prompt_text="", allowed_chars=None):
+    """
+    Read a single character from the user
+
+    Parameters
+    ----------
+    - `prompt_text` can be a message before reading user input
+    - `allowed_chars` can be a `set({})` of allowed characters
+    """
+    assert isinstance(prompt_text, str)
+    fd_stdin = sys.stdin.fileno()
+
+    oldterm = termios.tcgetattr(fd_stdin)
+    newattr = termios.tcgetattr(fd_stdin)
+    newattr[3] = newattr[3] & ~termios.ICANON & ~termios.ECHO
+    termios.tcsetattr(fd_stdin, termios.TCSANOW, newattr)
+
+    oldflags = fcntl.fcntl(fd_stdin, fcntl.F_GETFL)
+    fcntl.fcntl(fd_stdin, fcntl.F_SETFL, oldflags)
+
+    # print("something", end="") end param ensures there's no automatic newline
+    #     Ref -> https://stackoverflow.com/a/493399/667301
+    # Sometimes you need flush() to make the print() render
+    if isinstance(prompt_text, str) and (prompt_text != ""):
+        print(prompt_text, end="")
+        sys.stdout.flush()
+
+    try:
+        while True:
+            try:
+                single_char = sys.stdin.read(1)
+                # Check whether the char is in `allowed_chars`...
+                if isinstance(allowed_chars, set):
+                    if (single_char in allowed_chars):
+                        break
+
+                # break, if allowed_chars is not a `set({})`...
+                elif not isinstance(allowed_chars, set):
+                    break
+            except IOError:
+                pass
+    finally:
+        termios.tcsetattr(fd_stdin, termios.TCSAFLUSH, oldterm)
+        fcntl.fcntl(fd_stdin, fcntl.F_SETFL, oldflags)
+
+    if isinstance(prompt_text, str) and (prompt_text != ""):
+        print("")   # Move the cursor back to the far-left of terminal...
+        sys.stdout.flush()
+
+    return single_char
 
 
 C = Color()
