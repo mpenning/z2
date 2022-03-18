@@ -7,7 +7,8 @@
 3. [Run a command with realtime stdout](#L2-run-cmd01)
 4. [Run a command with blocked stdout](#L2-run-cmd02)
 5. [Print with Color](#L2-color)
-6. [Handle network interface addresses](#L2-network-addresses)
+6. [Get a single character from user input](#L2-getchar)
+7. [Handle network interface addresses](#L2-network-addresses)
 
 # Background <a name="L1-background" />
 
@@ -107,6 +108,23 @@ from z2.process import zrun
 output = list(zrun("ping -c3 172.16.1.1", print_stdout=True, realtime=False))
 
 print(output)
+```
+
+## `getchar()` - Get a single character from user input <a name="L2-getchar" />
+
+`getchar()` is a function to read a single letter from stdin and return it.
+
+```python
+from z2.strings import getchar
+
+input_character = getchar(prompt_text="What letter are you thinking of? ")
+print(f"The character input was '{input_character}'")
+
+input_character = getchar(
+    prompt_text="What letter are you thinking of? ",
+    allowed_chars=set({"a", "b", "c"}),
+    )
+print(f"The input restricted character was '{input_character}'")
 ```
 
 ## Print with Color <a name="L2-color" />
