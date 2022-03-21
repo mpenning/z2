@@ -1,4 +1,11 @@
 
+Version 0.0.28
+--------------
+
+Released 2022-03-21
+
+- Expose `cmd_run()` and `iter_cmd_realtime()` under `z2.process`
+
 Version 0.0.27
 --------------
 
