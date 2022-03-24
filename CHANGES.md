@@ -1,4 +1,11 @@
 
+Version 0.0.29
+--------------
+
+Released 2022-03-24
+
+- Add better repo version management to Makefile
+
 Version 0.0.28
 --------------
 
