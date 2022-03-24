@@ -11,13 +11,67 @@ This vim wrapper warns you before making master branch edits.
 I went out of my way to write this with only python3 stdlib dependencies.
 """
 
+from fnmatch import translate as fn_xlate
+from argparse import ArgumentParser
 from subprocess import Popen, PIPE
 import subprocess as subproc
+import fileinput
+import platform
 import termios
 import fcntl
 import shlex
 import sys
+import re
 import os
+
+# find all filepaths matching an include / exclude file pattern...
+# yield files
+def find_files(include="*", exclude="__no_files_excluded_at_all__"):
+    """Yield files matching `include` and not matching `exclude`"""
+    assert isinstance(include, str)
+    assert isinstance(exclude, str)
+
+    #     Ref -> https://stackoverflow.com/a/5141829/667301
+    # transform '*' glob patterns to regular expressions...
+    _include_rgx = r'|'.join([fn_xlate(ii) for ii in list(include.split(","))])
+    _exclude_rgx = r'|'.join([fn_xlate(ii) for ii in list(exclude.split(","))]) or r'$.'
+
+    for root_dir, dirs, files in os.walk("./"):
+
+        # exclude dirs
+        #dirs[:] = [os.path.join(root_dir, ii) for ii in dirs]
+        #dirs[:] = [ii for ii in dirs if not re.match(_exclude, ii)]
+
+        # exclude/include files
+        files = [os.path.join(root_dir, ii) for ii in files]
+        files = [ii for ii in files if not re.search(_exclude_rgx, ii)]
+        files = [ii for ii in files if re.search(_include_rgx, ii)]
+
+        for filepath in files:
+
+            if filepath[0:4]=="././":
+                filepath = filepath[2:]
+            yield filepath
+
+def replace_in_files(search_rgx=None, replace=None, filespec="*", change_git_master=False, debug=0):
+    assert isinstance(change_git_master, bool)
+    assert isinstance(search_rgx, str)
+    assert isinstance(replace, str)
+    assert isinstance(filespec, str)
+
+    for filepath in find_files(include=filespec):
+        assert isinstance(filepath, str)
+        assert os.path.isfile(filepath)
+
+        if change_git_master is False:
+            git_branch = find_git_branch_name(filepath=filepath)
+            if (git_branch in set({"main", "master"})):
+                print(f"REFUSING to change {filepath} in git {git_branch} branch")
+                continue
+
+        for line in fileinput.FileInput(filepath, inplace=True):
+            line = line.strip()
+            print(re.sub(search_rgx, replace, line))
 
 # I enhanced this but it was a great starting point...
 #     inspiration for the getchar() function:

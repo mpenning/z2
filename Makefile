@@ -1,4 +1,4 @@
-VERSION := $(shell grep version pyproject.toml | tr -s ' ' | tr -d '"' | cut -d' ' -f3)
+VERSION := $(shell grep version pyproject.toml | tr -s ' ' | tr -d '"' | tr -d "'" | cut -d' ' -f3)
 
 .PHONY: style
 style:
