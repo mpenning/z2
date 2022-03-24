@@ -1,5 +1,4 @@
-#DOCHOST ?= $(shell bash -c 'read -p "documentation host: " dochost; echo $$dochost')
-VERSION := $(shell grep version pyproject.toml | sed -r 's/^version\s*=\s*"(\S+?)"/\1/g')
+VERSION := $(shell grep version pyproject.toml | tr -u -s ' ' | tr -u -d '"' | cut -d' ' -f3)
 
 .PHONY: style
 style:
