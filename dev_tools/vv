@@ -59,6 +59,9 @@ def replace_in_files(search_rgx=None, replace=None, filespec="*", change_git_mas
     assert isinstance(replace, str)
     assert isinstance(filespec, str)
 
+    # check that fileinput doesn't modify permissions...
+    raise NotImplementedError("https://stackoverflow.com/questions/1605288/python-fileinput-changes-permission")
+
     for filepath in find_files(include=filespec):
         assert isinstance(filepath, str)
         assert os.path.isfile(filepath)
