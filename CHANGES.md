@@ -1,4 +1,11 @@
 
+Version 0.0.30
+--------------
+
+Released 2022-03-24
+
+- Add `replace_in_files()` function
+
 Version 0.0.29
 --------------
 
