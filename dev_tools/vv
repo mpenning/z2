@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 
 """
 vv: a vim wrapper that warns you if you try to edit git master or git main.
@@ -24,6 +24,8 @@ import sys
 import re
 import os
 
+assert sys.version_info > (3, 0), "FATAL python2 is not supported"
+
 # find all filepaths matching an include / exclude file pattern...
 # yield files
 def find_files(include="*", exclude="__no_files_excluded_at_all__"):
@@ -33,14 +35,14 @@ def find_files(include="*", exclude="__no_files_excluded_at_all__"):
 
     #     Ref -> https://stackoverflow.com/a/5141829/667301
     # transform '*' glob patterns to regular expressions...
-    _include_rgx = r'|'.join([fn_xlate(ii) for ii in list(include.split(","))])
-    _exclude_rgx = r'|'.join([fn_xlate(ii) for ii in list(exclude.split(","))]) or r'$.'
+    _include_rgx = r"|".join([fn_xlate(ii) for ii in list(include.split(","))])
+    _exclude_rgx = r"|".join([fn_xlate(ii) for ii in list(exclude.split(","))]) or r"$."
 
     for root_dir, dirs, files in os.walk("./"):
 
         # exclude dirs
-        #dirs[:] = [os.path.join(root_dir, ii) for ii in dirs]
-        #dirs[:] = [ii for ii in dirs if not re.match(_exclude, ii)]
+        # dirs[:] = [os.path.join(root_dir, ii) for ii in dirs]
+        # dirs[:] = [ii for ii in dirs if not re.match(_exclude, ii)]
 
         # exclude/include files
         files = [os.path.join(root_dir, ii) for ii in files]
@@ -49,18 +51,23 @@ def find_files(include="*", exclude="__no_files_excluded_at_all__"):
 
         for filepath in files:
 
-            if filepath[0:4]=="././":
+            if filepath[0:4] == "././":
                 filepath = filepath[2:]
             yield filepath
 
-def replace_in_files(search_rgx=None, replace=None, filespec="*", change_git_master=False, debug=0):
+
+def replace_in_files(
+    search_rgx=None, replace=None, filespec="*", change_git_master=False, debug=0
+):
     assert isinstance(change_git_master, bool)
     assert isinstance(search_rgx, str)
     assert isinstance(replace, str)
     assert isinstance(filespec, str)
 
     # check that fileinput doesn't modify permissions...
-    raise NotImplementedError("https://stackoverflow.com/questions/1605288/python-fileinput-changes-permission")
+    raise NotImplementedError(
+        "https://stackoverflow.com/questions/1605288/python-fileinput-changes-permission"
+    )
 
     for filepath in find_files(include=filespec):
         assert isinstance(filepath, str)
@@ -68,13 +75,14 @@ def replace_in_files(search_rgx=None, replace=None, filespec="*", change_git_mas
 
         if change_git_master is False:
             git_branch = find_git_branch_name(filepath=filepath)
-            if (git_branch in set({"main", "master"})):
-                print(f"REFUSING to change {filepath} in git {git_branch} branch")
+            if git_branch in set({"main", "master"}):
+                print("REFUSING to change {0} in git {1} branch".format(filepath, git_branch))
                 continue
 
         for line in fileinput.FileInput(filepath, inplace=True):
             line = line.strip()
             print(re.sub(search_rgx, replace, line))
+
 
 # I enhanced this but it was a great starting point...
 #     inspiration for the getchar() function:
@@ -95,6 +103,7 @@ def getchar(text=""):
     # print("this", end="") end param ensures there's no automatic newline...
     #     Ref -> https://stackoverflow.com/a/493399/667301
     # Sometimes you need flush() to make the print() work
+
     print(text, end="")
     sys.stdout.flush()
 
@@ -109,7 +118,7 @@ def getchar(text=""):
         termios.tcsetattr(fd_stdin, termios.TCSAFLUSH, oldterm)
         fcntl.fcntl(fd_stdin, fcntl.F_SETFL, oldflags)
 
-    print("")   # Move the cursor back to the far-left of terminal...
+    print("")  # Move the cursor back to the far-left of terminal...
     sys.stdout.flush()
 
     return single_char
