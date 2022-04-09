@@ -234,6 +234,17 @@ def configure_git_mergetool():
     for cmd_line in config:
         run_cmd_popen(cmd=cmd_line)
 
+def has_git_cli():
+    """
+    Run a simple check that the git cli is available on this system.
+
+    Return True if the system has the git CLI command.
+    """
+    retval_dict = run_cmd_popen(cmd="git --version")
+    assert isinstance(retval_dict["stdout"], list)
+
+    return "git version" in retval_dict["stdout"][0]
+
 
 def confirm_vim_edit_if_master(vals: str = None) -> None:
     """
@@ -243,6 +254,8 @@ def confirm_vim_edit_if_master(vals: str = None) -> None:
     other discussion here -> https://stackoverflow.com/a/45791560/667301
     """
     assert vals is None
+
+    assert has_git_cli() is True
 
     WARNING = "\033[93m"
     BOLD_CYAN = "\u001b[36;1m"
