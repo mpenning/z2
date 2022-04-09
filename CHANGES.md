@@ -1,4 +1,11 @@
 
+Version 0.0.31
+--------------
+
+Released 2022-04-09
+
+- Enhance the `dev_tools/vv` to ensure `git` is available before running vim
+
 Version 0.0.30
 --------------
 
