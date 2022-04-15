@@ -14,9 +14,7 @@ I went out of my way to write this with only python3 stdlib dependencies.
 from fnmatch import translate as fn_xlate
 from argparse import ArgumentParser
 from subprocess import Popen, PIPE
-import subprocess as subproc
 import fileinput
-import platform
 import termios
 import fcntl
 import shlex
@@ -25,6 +23,56 @@ import re
 import os
 
 assert sys.version_info > (3, 0), "FATAL python2 is not supported"
+
+
+def configure_inputrc():
+    """
+    # Most readline programs (such as the python shell) use ~/.inputrc...
+    # configure ~/.inputrc for vi line editing...
+
+    # Explicitly, add these lines to ~/.inputrc
+    set editing-mode vi
+    set keymap vi
+    """
+
+    VI_EDITING_MODE = False
+    VI_KEYMAP = False
+    BELL_CONFIG = False
+    COLORED_STATS = False
+    IF_AMBIGUOUS = False
+    COMMENT_BEGIN_HASH = False
+
+    filepath = os.path.expanduser("~/.inputrc")
+    print("EDITING", filepath)
+    with open(filepath) as fh:
+        for line in fh.read().splitlines():
+            if line.strip() == 'set editing-mode vi':
+                VI_EDITING_MODE = True
+            if line.strip() == 'set keymap vi':
+                VI_KEYMAP = True
+            if line.strip() == 'set bell-style none':
+                BELL_CONFIG = True
+            if line.strip() == 'set colored-stats On':
+                COLORED_STATS = True
+            if line.strip() == 'set show-all-if-ambiguous On':
+                IF_AMBIGUOUS = True
+            if line.strip() == 'set comment-begin "#"':
+                COMMENT_BEGIN_HASH = True
+
+
+    with open(filepath, 'a') as fh:
+        if VI_EDITING_MODE is False:
+            fh.write("set editing-mode vi" + os.linesep)
+        if VI_KEYMAP is False:
+            fh.write("set keymap vi" + os.linesep)
+        if BELL_CONFIG is False:
+            fh.write("set bell-style none" + os.linesep)
+        if COLORED_STATS is False:
+            fh.write("set colored-stats On" + os.linesep)
+        if IF_AMBIGUOUS is False:
+            fh.write("set show-all-if-ambiguous On" + os.linesep)
+        if COMMENT_BEGIN_HASH is False:
+            fh.write('set comment-begin "#"' + os.linesep)
 
 # find all filepaths matching an include / exclude file pattern...
 # yield files
@@ -78,10 +126,6 @@ def replace_in_files(
             if git_branch in set({"main", "master"}):
                 print("REFUSING to change {0} in git {1} branch".format(filepath, git_branch))
                 continue
-
-        for line in fileinput.FileInput(filepath, inplace=True):
-            line = line.strip()
-            print(re.sub(search_rgx, replace, line))
 
 
 # I enhanced this but it was a great starting point...
@@ -264,6 +308,7 @@ def confirm_vim_edit_if_master(vals: str = None) -> None:
     BLINK_BOLD_YELLOW = "\u001b[33;5m"
     ENDC = "\033[0m"
 
+
     # Configure git mergetool
     configure_git_mergetool()
 
@@ -321,4 +366,5 @@ def confirm_vim_edit_if_master(vals: str = None) -> None:
 
 
 if __name__ == "__main__":
+    configure_inputrc()
     confirm_vim_edit_if_master()
