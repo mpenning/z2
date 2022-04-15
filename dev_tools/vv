@@ -14,7 +14,6 @@ I went out of my way to write this with only python3 stdlib dependencies.
 from fnmatch import translate as fn_xlate
 from argparse import ArgumentParser
 from subprocess import Popen, PIPE
-import fileinput
 import termios
 import fcntl
 import shlex
@@ -43,7 +42,6 @@ def configure_inputrc():
     COMMENT_BEGIN_HASH = False
 
     filepath = os.path.expanduser("~/.inputrc")
-    print("EDITING", filepath)
     with open(filepath) as fh:
         for line in fh.read().splitlines():
             if line.strip() == 'set editing-mode vi':
