@@ -14,6 +14,7 @@ I went out of my way to write this with only python3 stdlib dependencies.
 from fnmatch import translate as fn_xlate
 from argparse import ArgumentParser
 from subprocess import Popen, PIPE
+import fileinput
 import termios
 import fcntl
 import shlex
@@ -22,55 +23,6 @@ import re
 import os
 
 assert sys.version_info > (3, 0), "FATAL python2 is not supported"
-
-
-def configure_inputrc():
-    """
-    # Most readline programs (such as the python shell) use ~/.inputrc...
-    # configure ~/.inputrc for vi line editing...
-
-    # Explicitly, add these lines to ~/.inputrc
-    set editing-mode vi
-    set keymap vi
-    """
-
-    VI_EDITING_MODE = False
-    VI_KEYMAP = False
-    BELL_CONFIG = False
-    COLORED_STATS = False
-    IF_AMBIGUOUS = False
-    COMMENT_BEGIN_HASH = False
-
-    filepath = os.path.expanduser("~/.inputrc")
-    with open(filepath) as fh:
-        for line in fh.read().splitlines():
-            if line.strip() == 'set editing-mode vi':
-                VI_EDITING_MODE = True
-            if line.strip() == 'set keymap vi':
-                VI_KEYMAP = True
-            if line.strip() == 'set bell-style none':
-                BELL_CONFIG = True
-            if line.strip() == 'set colored-stats On':
-                COLORED_STATS = True
-            if line.strip() == 'set show-all-if-ambiguous On':
-                IF_AMBIGUOUS = True
-            if line.strip() == 'set comment-begin "#"':
-                COMMENT_BEGIN_HASH = True
-
-
-    with open(filepath, 'a') as fh:
-        if VI_EDITING_MODE is False:
-            fh.write("set editing-mode vi" + os.linesep)
-        if VI_KEYMAP is False:
-            fh.write("set keymap vi" + os.linesep)
-        if BELL_CONFIG is False:
-            fh.write("set bell-style none" + os.linesep)
-        if COLORED_STATS is False:
-            fh.write("set colored-stats On" + os.linesep)
-        if IF_AMBIGUOUS is False:
-            fh.write("set show-all-if-ambiguous On" + os.linesep)
-        if COMMENT_BEGIN_HASH is False:
-            fh.write('set comment-begin "#"' + os.linesep)
 
 # find all filepaths matching an include / exclude file pattern...
 # yield files
@@ -84,18 +36,18 @@ def find_files(include="*", exclude="__no_files_excluded_at_all__"):
     _include_rgx = r"|".join([fn_xlate(ii) for ii in list(include.split(","))])
     _exclude_rgx = r"|".join([fn_xlate(ii) for ii in list(exclude.split(","))]) or r"$."
 
-    for root_dir, dirs, files in os.walk("./"):
+    for root_dir, _, files in os.walk("./"):
 
         # exclude dirs
         # dirs[:] = [os.path.join(root_dir, ii) for ii in dirs]
         # dirs[:] = [ii for ii in dirs if not re.match(_exclude, ii)]
 
         # exclude/include files
-        files = [os.path.join(root_dir, ii) for ii in files]
-        files = [ii for ii in files if not re.search(_exclude_rgx, ii)]
-        files = [ii for ii in files if re.search(_include_rgx, ii)]
+        files_w_fullpath = [os.path.join(root_dir, ii) for ii in files]
+        filtered_files = [ii for ii in files_w_fullpath if not re.search(_exclude_rgx, ii)]
+        included_files = [ii for ii in filtered_files if re.search(_include_rgx, ii)]
 
-        for filepath in files:
+        for filepath in included_files:
 
             if filepath[0:4] == "././":
                 filepath = filepath[2:]
@@ -124,6 +76,10 @@ def replace_in_files(
             if git_branch in set({"main", "master"}):
                 print("REFUSING to change {0} in git {1} branch".format(filepath, git_branch))
                 continue
+
+        for line in fileinput.FileInput(filepath, inplace=True):
+            line = line.strip()
+            print(re.sub(search_rgx, replace, line))
 
 
 # I enhanced this but it was a great starting point...
@@ -171,7 +127,7 @@ def vim_write_mode():
     assert len(sys.argv) > 0
 
     cmd_name = sys.argv[0].split("/")[-1]
-    if cmd_name == "vim" or cmd_name == "vi" or cmd_name == "vv":
+    if cmd_name in ("vim", "vi", "vv",):
         if "-R" in set(sys.argv[1:]):
             return False
         return True
@@ -179,8 +135,8 @@ def vim_write_mode():
     raise OSError("Not using vi or vim")
 
 
-def run_vim(vals: str = None) -> None:
-    assert vals is None
+def run_vim(vals: str = "") -> None:
+    assert vals == ""
 
     # If a filename or args are specified from the cli...
     if len(sys.argv) > 1:
@@ -188,15 +144,16 @@ def run_vim(vals: str = None) -> None:
         # Replace __file__ with 'vim' in sys.argv[0]...
         vv.insert(0, "vim")
 
+        cmd_w_args = " ".join(vv)
         # Run vim and do not capture stdout...
-        os.system(" ".join(vv))
+        os.system(cmd_w_args)
 
     else:
         # Run vim and do not capture stdout...
         os.system("vim")
 
 
-def log_level_string(log_level: str = None):
+def log_level_string(log_level: str = "DEBUG"):
     assert isinstance(log_level, str)
     color_dict = {
         "TRACE": 0,
@@ -212,23 +169,24 @@ def log_level_string(log_level: str = None):
     return "\u001b[37;1m" + "[" + log_level.upper() + "]" + "\033[0m"
 
 
-def run_cmd_popen(cmd: str = None, shell: str = None, cwd: str = "./") -> dict:
+def run_cmd_popen(cmd: str = "", cwd: str = "./") -> dict:
     """
     Run a shell command with Popen() and return stdout / stderr in a dict().
     """
-    assert isinstance(cmd, str)
+    shell = False
+    assert isinstance(cmd, str) and cmd!=""
+    assert isinstance(shell, bool)
     assert len(cmd.splitlines()) == 1
 
-    cmd_parts = shlex.split(cmd)
-    git_branch_proc = Popen(
-        cmd_parts,
+    running_process = Popen(
+        shlex.split(cmd),
         stdout=PIPE,
         stderr=PIPE,
-        shell=None,
+        shell=False,
         encoding="utf-8",
-        cwd="./",
+        cwd=cwd,
     )
-    stdout, stderr = git_branch_proc.communicate()
+    stdout, stderr = running_process.communicate()
     retval = {
         "cmd": cmd,
         "stdout": stdout.splitlines(),
@@ -288,14 +246,14 @@ def has_git_cli():
     return "git version" in retval_dict["stdout"][0]
 
 
-def confirm_vim_edit_if_master(vals: str = None) -> None:
+def confirm_vim_edit_if_master(vals: str = "_default_value_") -> None:
     """
     Direct commits to master are taboo and often a bad idea... for instance,
     what if two people direct commit simultaneously to the same file in master?
 
     other discussion here -> https://stackoverflow.com/a/45791560/667301
     """
-    assert vals is None
+    assert vals == "_default_value_"
 
     assert has_git_cli() is True
 
@@ -305,7 +263,6 @@ def confirm_vim_edit_if_master(vals: str = None) -> None:
     BOLD_WHITE = "\u001b[37;1m"
     BLINK_BOLD_YELLOW = "\u001b[33;5m"
     ENDC = "\033[0m"
-
 
     # Configure git mergetool
     configure_git_mergetool()
@@ -364,5 +321,4 @@ def confirm_vim_edit_if_master(vals: str = None) -> None:
 
 
 if __name__ == "__main__":
-    configure_inputrc()
     confirm_vim_edit_if_master()
