@@ -180,6 +180,8 @@ def iter_cmd_realtime(
         print(line)
 
     """
+    # FIXME - consider how to integrate color command output, one possibility:
+    #     https://stackoverflow.com/a/12471855/667301
     if debug > 0:
         LogIt().info("Calling iter_cmd_realtime(cmd='{}')".format(cmd))
     timeout = float(timeout)

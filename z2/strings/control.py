@@ -8,25 +8,45 @@ from loguru import logger
 # Source:
 #     https://stackoverflow.com/a/287944/667301
 @logger.catch(default=True, onerror=lambda _: sys.exit(1))
-class Color:
+class Color(object):
     """
     Select Graphic Rendition (SGR) color codes...
     https://en.wikipedia.org/wiki/ANSI_escape_code#SGR_(Select_Graphic_Rendition)_parameters
     """
 
-    BLUE = "\033[94m"
-    CYAN = "\033[96m"
-    GREEN = "\033[92m"
-    # ORANGE below uses 256-color (8-bit) codes
-    ORANGE = "\033[38;2;255;165;1m"
-    #              ^^ (38 is Foreground, 48 is Background)
+    # Sources
+    #   -> https://www.lihaoyi.com/post/BuildyourownCommandLinewithANSIescapecodes.html
+    #   -> https://xdevs.com/guide/color_serial/
+    #   -> https://stackoverflow.com/questions/4842424/list-of-ansi-color-escape-sequences
+    #   -> https://wiki.bash-hackers.org/scripting/terminalcodes
+    FG_BLACK = "\033[30m"
+    FG_RED = "\033[31m"
+    FG_GREEN = "\033[32m"
+    FG_YELLOW = "\033[33m"
+    FG_BLUE = "\033[34m"
+    FG_MAGENTA = "\033[35m"
+    FG_CYAN = "\033[36m"
+    FG_WHITE = "\033[37m"
+    # ORANGE & PURPLE below uses 256-color (8-bit) codes
+    #
+    #     RGB ORANGE: 255, 165, 0
+    FG_ORANGE = "\033[38;2;255;165;0m"
+    #                 ^^ (38 is Foreground, 48 is Background)
+    #
+    #     RGB PURPLE: 230, 230, 250
+    FG_PURPLE = "\033[38;2;230;230;250m"
+    #                 ^^ (38 is Foreground, 48 is Background)
 
-    # Source -> https://www.lihaoyi.com/post/BuildyourownCommandLinewithANSIescapecodes.html
-    RED = "\u001b[31m"
-    BLACK = "\u001b[30m"
-    YELLOW = "\u001b[33m"
-    MAGENTA = "\u001b[35m"
-    WHITE = "\u001b[37m"
+    BG_BLACK = "\033[0;40m"
+    BG_RED = "\033[0;41m"
+    BG_GREEN = "\033[0;42m"
+    BG_YELLOW = "\033[0;43m"
+    BG_BLUE = "\033[0;44m"
+    BG_MAGENTA = "\033[0;45m"
+    BG_CYAN = "\033[0;46m"
+    BG_WHITE = "\033[0;47m"
+    BG_ORANGE = "\033[48;2;255;165;0m"
+    BG_PURPLE = "\033[48;2;230;230;250m"
 
     BRIGHT_RED = "\u001b[31;1m"
     BRIGHT_GREEN = "\u001b[32;1m"
@@ -37,12 +57,25 @@ class Color:
     BRIGHT_WHITE = "\u001b[37;1m"
     BRIGHT_BLACK = "\u001b[30;1m"
 
+    # Output format codes
+    #
+    # https://stackoverflow.com/a/53826230/667301
+    #
+    BOLD = "\033[1m"
+    DIM = "\033[2m"
+    STANDOUT = "\033[3m"
+    UNDERLINE = "\033[4m"
+    # FYI... PuTTY requires special config to display BLINK text codes...
+    #     After many experiments, I can't make PuTTY reliably blink
+    #     text using "\033[5m"
+    BLINK_SLOW = "\033[5m"
+    BLINK_FAST = "\033[6m"
+    INVERSE = "\033[7m"
+
     # Situational color names...
     HEADER = "\033[95m"
     WARNING = "\033[93m"
     FAIL = "\033[91m"
-    BOLD = "\033[1m"
-    UNDERLINE = "\033[4m"
 
     # End the colors...
     ENDC = "\033[0m"
