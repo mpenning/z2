@@ -32,6 +32,7 @@ WARNING = "\033[93m"
 BOLD_CYAN = "\u001b[36;1m"
 BOLD_YELLOW = "\u001b[33;1m"
 BOLD_WHITE = "\u001b[37;1m"
+BOLD_GREEN = "\u001b[32;1m"
 BLINK_BOLD_YELLOW = "\u001b[33;5m"
 BG_RED = "\033[0;41m"
 ENDC = "\033[0m"
@@ -273,7 +274,7 @@ def confirm_vim_ntp_running(vals: str = "_default_value_") -> bool:
             break
 
     if ntp_sync_bool is False:
-        warning_message = "{3} {0}`{4}`{6} {5}status did not return '{2}sync_ntp{6}'.".format(
+        warning_message = "{3} {0}`{4}`{6} {5}status did not return {2}'sync_ntp'.{6}".format(
             BOLD_CYAN,
             sys.argv[-1],
             BOLD_YELLOW,
@@ -286,12 +287,13 @@ def confirm_vim_ntp_running(vals: str = "_default_value_") -> bool:
         time.sleep(1.0)
 
     else:
-        info_message = "{3} {0}`{4}`{5} status '{2}sync_ntp{5}'; ntpq appears to be sync'd.".format(
+        info_message = "{3} {0}`{4}`{6} status '{2}sync_ntp{6}'; {5}ntpq appears to be sync'd.{6}".format(
             BOLD_CYAN,
             sys.argv[-1],
             BOLD_YELLOW,
             log_level_string("info"),
             ntp_cmd,
+            BOLD_GREEN,
             ENDC,
         )
         print(info_message)
