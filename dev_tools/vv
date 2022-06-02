@@ -15,14 +15,26 @@ from fnmatch import translate as fn_xlate
 from argparse import ArgumentParser
 from subprocess import Popen, PIPE
 import fileinput
+import pathlib
 import termios
 import fcntl
 import shlex
+import time
 import sys
 import re
 import os
 
 assert sys.version_info > (3, 0), "FATAL python2 is not supported"
+assert sys.version_info >= (3, 4), "pathlib usage requires Python3.4 or higher"
+
+# Set some terminal color globals
+WARNING = "\033[93m"
+BOLD_CYAN = "\u001b[36;1m"
+BOLD_YELLOW = "\u001b[33;1m"
+BOLD_WHITE = "\u001b[37;1m"
+BLINK_BOLD_YELLOW = "\u001b[33;5m"
+BG_RED = "\033[0;41m"
+ENDC = "\033[0m"
 
 # find all filepaths matching an include / exclude file pattern...
 # yield files
@@ -173,10 +185,12 @@ def run_cmd_popen(cmd: str = "", cwd: str = "./") -> dict:
     """
     Run a shell command with Popen() and return stdout / stderr in a dict().
     """
-    shell = False
     assert isinstance(cmd, str) and cmd!=""
-    assert isinstance(shell, bool)
     assert len(cmd.splitlines()) == 1
+
+    this_pathlib_obj = pathlib.Path(__file__)
+    _relative_cwd = pathlib.Path(__file__).parent
+    _absolute_cwd = pathlib.Path(__file__).resolve()
 
     running_process = Popen(
         shlex.split(cmd),
@@ -189,6 +203,7 @@ def run_cmd_popen(cmd: str = "", cwd: str = "./") -> dict:
     stdout, stderr = running_process.communicate()
     retval = {
         "cmd": cmd,
+        "cwd": cwd,
         "stdout": stdout.splitlines(),
         "stderr": stderr.splitlines(),
     }
@@ -245,6 +260,44 @@ def has_git_cli():
 
     return "git version" in retval_dict["stdout"][0]
 
+def confirm_vim_ntp_running(vals: str = "_default_value_") -> bool:
+    """
+    Check that ntp is running on the system.  Warn if ntp is not running.
+    """
+    ntp_cmd = "ntpq -c rv"
+    stdout_lines = run_cmd_popen(ntp_cmd).get("stdout", "__cmd_fail__")
+    ntp_sync_bool = False
+    for line in stdout_lines:
+        if "sync_ntp" in line:
+            ntp_sync_bool = True
+            break
+
+    if ntp_sync_bool is False:
+        warning_message = "{3} {0}`{4}`{6} {5}status did not return '{2}sync_ntp{6}'.".format(
+            BOLD_CYAN,
+            sys.argv[-1],
+            BOLD_YELLOW,
+            log_level_string("warning"),
+            ntp_cmd,
+            BG_RED,
+            ENDC,
+        )
+        print(warning_message)
+        time.sleep(1.0)
+
+    else:
+        info_message = "{3} {0}`{4}`{5} status '{2}sync_ntp{5}'; ntpq appears to be sync'd.".format(
+            BOLD_CYAN,
+            sys.argv[-1],
+            BOLD_YELLOW,
+            log_level_string("info"),
+            ntp_cmd,
+            ENDC,
+        )
+        print(info_message)
+
+    return ntp_sync_bool
+
 
 def confirm_vim_edit_if_master(vals: str = "_default_value_") -> None:
     """
@@ -257,12 +310,6 @@ def confirm_vim_edit_if_master(vals: str = "_default_value_") -> None:
 
     assert has_git_cli() is True
 
-    WARNING = "\033[93m"
-    BOLD_CYAN = "\u001b[36;1m"
-    BOLD_YELLOW = "\u001b[33;1m"
-    BOLD_WHITE = "\u001b[37;1m"
-    BLINK_BOLD_YELLOW = "\u001b[33;5m"
-    ENDC = "\033[0m"
 
     # Configure git mergetool
     configure_git_mergetool()
@@ -321,4 +368,5 @@ def confirm_vim_edit_if_master(vals: str = "_default_value_") -> None:
 
 
 if __name__ == "__main__":
+    confirm_vim_ntp_running()
     confirm_vim_edit_if_master()
