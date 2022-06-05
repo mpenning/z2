@@ -276,7 +276,7 @@ def confirm_vim_ntp_running(vals: str = "_default_value_") -> bool:
             break
 
     if ntp_sync_bool is False:
-        warning_message = "{3} {0}`{4}`{6} {5}status did not return {2}'sync_ntp'.{6}".format(
+        ntp_message = "{3} {0}`{4}`{6} {5}status did not return {2}'sync_ntp'.{6}".format(
             BOLD_CYAN,
             sys.argv[-1],
             BOLD_YELLOW,
@@ -285,11 +285,11 @@ def confirm_vim_ntp_running(vals: str = "_default_value_") -> bool:
             BG_RED,
             ENDC,
         )
-        print(warning_message)
+        print(ntp_message)
         time.sleep(1.0)
 
     else:
-        info_message = "{3} {0}`{4}`{6} returns status '{2}sync_ntp{6}'; {5}ntpq appears to be sync'd.{6}".format(
+        ntp_message = "{3} {0}`{4}`{6} returns status '{2}sync_ntp{6}'; {5}ntpq appears to be sync'd.{6}".format(
             BOLD_CYAN,
             sys.argv[-1],
             BOLD_YELLOW,
@@ -298,7 +298,7 @@ def confirm_vim_ntp_running(vals: str = "_default_value_") -> bool:
             BOLD_GREEN,
             ENDC,
         )
-        print(info_message)
+        print(ntp_message)
 
     return ntp_sync_bool
 
