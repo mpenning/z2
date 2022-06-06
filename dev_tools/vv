@@ -32,7 +32,7 @@ assert sys.version_info >= (3, 4), "pathlib usage requires Python3.4 or higher"
 # Set some terminal color globals
 WARNING = "\033[93m"
 BOLD_CYAN = "\u001b[36;1m"
-BOLD_YELLOW = "\u001b[33;5mBold"
+BOLD_YELLOW = "\u001b[33;5m"
 BOLD_WHITE = "\u001b[37;1m"
 BOLD_GREEN = "\u001b[32;1m"
 BG_RED = "\033[0;41m"
