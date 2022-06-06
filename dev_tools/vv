@@ -339,26 +339,28 @@ def confirm_vim_edit_if_master(vals: str = "_default_value_") -> None:
             sys.exit(0)
 
         else:
-            message = "{5} Editing '{0}{1}{4}' on the {2}git {3}{4} branch.".format(
-                BOLD_CYAN,
-                sys.argv[-1],
-                BOLD_YELLOW,
-                git_branch,
-                ENDC,
-                log_level_string("info"),
+            message = "{5} Editing '{0}{1}{6}' on the {2}git {4}{6} branch. {3}LGTM.{6}".format(
+                BOLD_CYAN,                  # position 0
+                sys.argv[-1],               # position 1
+                BOLD_YELLOW,                # position 2
+                BOLD_GREEN,                 # position 3
+                git_branch,                 # position 4
+                log_level_string("info"),   # position 5
+                ENDC,                       # position 6
             )
             print(message)
             run_vim()
 
     else:
         if git_branch != "":
-            message = "{5} Editing '{0}{1}{4}' on the {2}git {3}{4} branch.".format(
-                BOLD_CYAN,
-                sys.argv[-1],
-                BOLD_YELLOW,
-                git_branch,
-                ENDC,
-                log_level_string("info"),
+            message = "{5} Editing '{0}{1}{6}' on the {2}git {4}{6} branch. {3}LGTM.{6}".format(
+                BOLD_CYAN,                  # position 0
+                sys.argv[-1],               # position 1
+                BOLD_YELLOW,                # position 2
+                BOLD_GREEN,                 # position 3
+                git_branch,                 # position 4
+                log_level_string("info"),   # position 5
+                ENDC,                       # position 6
             )
         else:
             message = "{} Editing '{}{}{}'.".format(
