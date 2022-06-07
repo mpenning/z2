@@ -21,7 +21,6 @@ import pathlib
 import termios
 import fcntl
 import shlex
-import time
 import sys
 import re
 import os
@@ -314,7 +313,6 @@ def confirm_vim_ntp_running(vals: str = "_default_value_") -> bool:
             ENDC,                           # position 6
         )
         print(ntp_message)
-        time.sleep(1.0)
 
     else:
         ntp_message = "{3} {0}`{4}`{6} returns status '{2}sync_ntp{6}'; {5}ntpq appears to be sync'd.{6}".format(
@@ -358,7 +356,6 @@ def confirm_vim_chrony_running(vals: str = "_default_value_") -> bool:
             ENDC,                             # position 6
         )
         print(chrony_message)
-        time.sleep(1.0)
 
     else:
         chrony_message = "{3} {0}`{4}`{7} returns status '{2}Reference ID: {6}{7}'; {5}chrony appears to be sync'd.{7}".format(
@@ -372,7 +369,6 @@ def confirm_vim_chrony_running(vals: str = "_default_value_") -> bool:
             ENDC,                             # position 7
         )
         print(chrony_message)
-        time.sleep(1.0)
 
     return chrony_sync_bool
 
