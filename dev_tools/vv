@@ -228,7 +228,7 @@ def run_cmd_popen(
             raise FileNotFoundError("'%s' is not in the PATH." % cmd.split()[0])
 
         else:
-            print("'%s' is not in the PATH or is not installed" % base_cmd)
+            print("run_cmd_popen(): FileNotFoundError() '%s' is not in the PATH" % base_cmd)
 
     retval = {
         "cmd": cmd,
