@@ -30,7 +30,7 @@ repo-push-tag:
 repo-push-force:
 	-git remote remove origin
 	git remote add origin "git@github.com:mpenning/z2"
-	git push git@github.com:mpenning/z2.git
+	git push --force-with-lease git@github.com:mpenning/z2.git
 	git push --force-with-lease origin +main
 
 .PHONY: repo-push-tag-force
