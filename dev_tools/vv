@@ -1,0 +1,482 @@
+#!/usr/bin/env python3
+
+"""
+vv: a vim wrapper that:
+- warns you if you try to edit git master or git main
+- warns you if ntp is not sync'd
+
+I have a pre-commit hook to prevent direct commits to git master, but it's
+better to not make changes on master in the first place.
+
+This vim wrapper warns you before making master branch edits.
+
+I went out of my way to write this with only python3 stdlib dependencies.
+"""
+
+from fnmatch import translate as fn_xlate
+from argparse import ArgumentParser
+from subprocess import Popen, PIPE
+import fileinput
+import pathlib
+import termios
+import fcntl
+import shlex
+import sys
+import re
+import os
+
+assert sys.version_info > (3, 0), "FATAL python2 is not supported"
+assert sys.version_info >= (3, 5), "python type hints are only supported in Python >= 3.5"
+
+# Set some terminal color globals
+WARNING = "\033[93m"
+BOLD_CYAN = "\u001b[36;1m"
+BOLD_YELLOW = "\u001b[33;1m"
+BOLD_WHITE = "\u001b[37;1m"
+BOLD_GREEN = "\u001b[32;1m"
+BG_RED = "\033[0;41m"
+ENDC = "\033[0m"
+
+# find all filepaths matching an include / exclude file pattern...
+# yield files
+def find_files(
+    include: str="*",
+    exclude: str="__no_files_excluded_at_all__"
+) -> str:
+    """Yield files matching `include` and not matching `exclude`"""
+    assert isinstance(include, str)
+    assert isinstance(exclude, str)
+
+    #     Ref -> https://stackoverflow.com/a/5141829/667301
+    # transform '*' glob patterns to regular expressions...
+    _include_rgx = r"|".join([fn_xlate(ii) for ii in list(include.split(","))])
+    _exclude_rgx = r"|".join([fn_xlate(ii) for ii in list(exclude.split(","))]) or r"$."
+
+    for root_dir, _, files in os.walk("./"):
+
+        # exclude dirs
+        # dirs[:] = [os.path.join(root_dir, ii) for ii in dirs]
+        # dirs[:] = [ii for ii in dirs if not re.match(_exclude, ii)]
+
+        # exclude/include files
+        files_w_fullpath = [os.path.join(root_dir, ii) for ii in files]
+        filtered_files = [ii for ii in files_w_fullpath if not re.search(_exclude_rgx, ii)]
+        included_files = [ii for ii in filtered_files if re.search(_include_rgx, ii)]
+
+        for filepath in included_files:
+
+            if filepath[0:4] == "././":
+                filepath = filepath[2:]
+            yield filepath
+
+
+def replace_in_files(
+    search_rgx: str="",
+    replace: str="",
+    filespec: str="*",
+    change_git_master: bool=False,
+    debug: int=0
+) -> None:
+    assert isinstance(change_git_master, bool)
+    assert isinstance(search_rgx, str)
+    assert isinstance(replace, str)
+    assert isinstance(filespec, str)
+    assert isinstance(debug, int)
+
+    # check that fileinput doesn't modify permissions...
+    raise NotImplementedError(
+        "https://stackoverflow.com/questions/1605288/python-fileinput-changes-permission"
+    )
+
+    for filepath in find_files(include=filespec):
+        assert isinstance(filepath, str)
+        assert os.path.isfile(filepath)
+
+        if change_git_master is False:
+            git_branch = find_git_branch_name(filepath=filepath)
+            if git_branch in set({"main", "master"}):
+                print("REFUSING to change {0} in git {1} branch".format(filepath, git_branch))
+                continue
+
+        for line in fileinput.FileInput(filepath, inplace=True):
+            line = line.strip()
+            print(re.sub(search_rgx, replace, line))
+
+
+# I enhanced this but it was a great starting point...
+#     inspiration for the getchar() function:
+#     Ref -> https://stackoverflow.com/a/7259460/667301
+def getchar(text: str = "") -> str:
+    """Read a single character from the user"""
+    assert isinstance(text, str)
+    fd_stdin = sys.stdin.fileno()
+
+    oldterm = termios.tcgetattr(fd_stdin)
+    newattr = termios.tcgetattr(fd_stdin)
+    newattr[3] = newattr[3] & ~termios.ICANON & ~termios.ECHO
+    termios.tcsetattr(fd_stdin, termios.TCSANOW, newattr)
+
+    oldflags = fcntl.fcntl(fd_stdin, fcntl.F_GETFL)
+    fcntl.fcntl(fd_stdin, fcntl.F_SETFL, oldflags)
+
+    # print("this", end="") end param ensures there's no automatic newline...
+    #     Ref -> https://stackoverflow.com/a/493399/667301
+    # Sometimes you need flush() to make the print() work
+
+    print(text, end="")
+    sys.stdout.flush()
+
+    try:
+        while True:
+            try:
+                single_char = sys.stdin.read(1)
+                break
+            except IOError:
+                pass
+    finally:
+        termios.tcsetattr(fd_stdin, termios.TCSAFLUSH, oldterm)
+        fcntl.fcntl(fd_stdin, fcntl.F_SETFL, oldflags)
+
+    print("")  # Move the cursor back to the far-left of terminal...
+    sys.stdout.flush()
+
+    return single_char
+
+
+def vim_write_mode() -> bool:
+    """Return True if vim is in read-write mode"""
+    assert len(sys.argv) > 0
+
+    cmd_name = sys.argv[0].split("/")[-1]
+    if cmd_name in ("vim", "vi", "vv",):
+        if "-R" in set(sys.argv[1:]):
+            return False
+        return True
+
+    raise OSError("Not using vi or vim")
+
+
+def run_vim(vals: str = "") -> None:
+    assert vals == ""
+
+    # If a filename or args are specified from the cli...
+    if len(sys.argv) > 1:
+        vv = sys.argv[1:]
+        # Replace __file__ with 'vim' in sys.argv[0]...
+        vv.insert(0, "vim")
+
+        cmd_w_args = " ".join(vv)
+        # Run vim and do not capture stdout...
+        os.system(cmd_w_args)
+
+    else:
+        # Run vim and do not capture stdout...
+        os.system("vim")
+
+
+def log_level_string(log_level: str = "DEBUG") -> str:
+    """
+    Return a colorized log level string.
+    """
+    assert isinstance(log_level, str)
+    color_dict = {
+        "TRACE": 0,
+        "DEBUG": 1,
+        "INFO": 2,
+        "SUCCESS": 3,
+        "WARNING": 4,
+        "ERROR": 5,
+        "CRITICAL": 6,
+    }
+    assert log_level.upper() in set(color_dict.keys())
+
+    return "\u001b[37;1m" + "[" + log_level.upper() + "]" + "\033[0m"
+
+
+def run_cmd_popen(
+    cmd: str = "",
+    cwd: str = "./",
+    throw_errors: bool = True,
+) -> dict:
+    """
+    Run a shell command with Popen() and return stdout / stderr in a dict().
+    """
+    assert isinstance(cmd, str) and cmd!=""
+    assert len(cmd.splitlines()) == 1
+
+    # this_pathlib_obj = pathlib.Path(__file__)
+    # _relative_cwd = pathlib.Path(__file__).parent
+    # _absolute_cwd = pathlib.Path(__file__).resolve()
+
+    retval = {"stdout": "_empty_", "stderr": "_empty_"}       # default retval
+    stdout, stderr = "_empty_", "_empty_"
+    base_cmd = cmd.split()[0].strip()
+    try:
+        running_process = Popen(
+            shlex.split(cmd),
+            stdout=PIPE,
+            stderr=PIPE,
+            shell=False,
+            encoding="utf-8",
+            cwd=cwd,
+        )
+        stdout, stderr = running_process.communicate()
+
+    except FileNotFoundError:
+        if throw_errors is True:
+            # FileNotFoundError() traps errors from unknown commands in cmd
+            raise FileNotFoundError("'%s' is not in the PATH." % cmd.split()[0])
+
+        else:
+            message = "{3} {0}`{4}`{6} {5}is not in the env {2}PATH{6}{2}{5} variable, or is not installed.{6}".format(
+                BOLD_CYAN,                      # position 0
+                sys.argv[-1],                   # position 1
+                BOLD_YELLOW,                    # position 2
+                log_level_string("warning"),    # position 3
+                base_cmd,                       # position 4
+                BG_RED,                         # position 5
+                ENDC,                           # position 6
+            )
+            print(message)
+
+    retval = {
+        "cmd": cmd,
+        "cwd": cwd,
+        "stdout": stdout.splitlines(),
+        "stderr": stderr.splitlines(),
+    }
+
+    return retval
+
+
+def find_git_branch_name(filepath=None) -> str:
+    """
+    Return the git branch name of the git repo that filepath is in.
+
+    If it's not in a git repo, return "".
+    """
+    assert filepath is not None
+
+    filepath_dir = "/".join(filepath.split("/")[:-1])
+    this_dir = os.getcwd()
+
+    git_branch = ""
+    os.chdir(filepath_dir or "./")  # or condition to handle an empty filepath
+    vals = run_cmd_popen("git branch --show-current", throw_errors=False)
+    os.chdir(this_dir or "./")  # or condition to handle an empty filepath
+
+    if len(vals["stderr"]) > 0 and "not a git repository" in vals["stderr"][0]:
+        # You're not in a git branch... return ""
+        pass
+
+    elif len(vals["stdout"]) == 1:
+        git_branch = vals["stdout"][0].strip()
+
+    else:
+        raise ValueError("Unknown return values: %s" % vals)
+
+    return git_branch
+
+
+def configure_git_mergetool():
+    """Set up git mergtool to resolve conflicts with vimdiff / diff3"""
+    config = [
+        "git config merge.tool vimdiff",
+        "git config merge.conflictstyle diff3",
+        "git config mergetool.prompt false",
+    ]
+    for cmd_line in config:
+        run_cmd_popen(cmd=cmd_line, throw_errors=False)
+
+
+def has_git_cli():
+    """
+    Run a simple check that the git cli is available on this system.
+
+    Return True if the system has the git CLI command.
+    """
+    retval_dict = run_cmd_popen(cmd="git --version", throw_errors=False)
+    assert isinstance(retval_dict["stdout"], list)
+
+    return "git version" in retval_dict["stdout"][0]
+
+
+def confirm_vim_ntp_running(vals: str = "_default_value_") -> bool:
+    """
+    Check that ntp is running on the system.  Warn if ntp is not running.
+    """
+    ntp_cmd = "ntpq -c rv"
+    stdout_lines = run_cmd_popen(ntp_cmd, throw_errors=False).get("stdout", "__cmd_fail__")
+    ntp_sync_bool = False
+    ntp_status = ""
+    for line in stdout_lines:
+        if "sync_ntp" in line:
+            ntp_status = "sync_ntp"
+            ntp_sync_bool = True
+            break
+
+        elif "sync_unspec" in line:
+            ntp_status = "sync_unspec"
+            ntp_sync_bool = False
+            break
+
+    if ntp_sync_bool is False:
+        ntp_message = "{3} {0}`{4}`{6} {5}status did not return {2}'sync_ntp'.{6}".format(
+            BOLD_CYAN,                      # position 0
+            sys.argv[-1],                   # position 1
+            BOLD_YELLOW,                    # position 2
+            log_level_string("warning"),    # position 3
+            ntp_cmd,                        # position 4
+            BG_RED,                         # position 5
+            ENDC,                           # position 6
+        )
+        print(ntp_message)
+
+    else:
+        ntp_message = "{3} {0}`{4}`{6} returned status: '{2}sync_ntp{6}'; {5}ntpq appears to be sync'd.{6}".format(
+            BOLD_CYAN,                      # position 0
+            sys.argv[-1],                   # position 1
+            BOLD_YELLOW,                    # position 2
+            log_level_string("info"),       # position 3
+            ntp_cmd,                        # position 4
+            BOLD_GREEN,                     # position 5
+            ENDC,                           # position 6
+        )
+        print(ntp_message)
+
+    return ntp_sync_bool
+
+def confirm_vim_chrony_running(vals: str = "_default_value_") -> bool:
+    """
+    Check that chrony is running on the system.  Warn if chrony is not running.
+    """
+    chrony_cmd = "chronyc tracking"
+    stdout_lines = run_cmd_popen(chrony_cmd, throw_errors=False).get("stdout", "__cmd_fail__")
+    chrony_sync_bool = False
+    reference_id = None
+    for line in stdout_lines:
+        mm = re.search(r"Reference\s+ID\s*:\s+(\S+)\b", line, re.I)
+        if mm is not None:
+            reference_id = mm.group(1)
+            assert re.search(r"^\S+$", reference_id)
+            chrony_sync_bool = True
+            break
+        else:
+            reference_id = None
+
+    if chrony_sync_bool is False:
+        chrony_message = "{3} {0}`{4}`{6} {5}status did not return {2}'Reference ID'.{6}".format(
+            BOLD_CYAN,                        # position 0
+            sys.argv[-1],                     # position 1
+            BOLD_YELLOW,                      # position 2
+            log_level_string("warning"),      # position 3
+            chrony_cmd,                       # position 4
+            BG_RED,                           # position 5
+            ENDC,                             # position 6
+        )
+        print(chrony_message)
+
+    else:
+        chrony_message = "{3} {0}`{4}`{7} returned status '{2}Reference ID: {6}{7}'; {5}chrony appears to be sync'd.{7}".format(
+            BOLD_CYAN,                        # position 0
+            sys.argv[-1],                     # position 1
+            BOLD_YELLOW,                      # position 2
+            log_level_string("info"),         # position 3
+            chrony_cmd,                       # position 4
+            BOLD_GREEN,                       # position 5
+            reference_id,                     # position 6
+            ENDC,                             # position 7
+        )
+        print(chrony_message)
+
+    return chrony_sync_bool
+
+
+def confirm_vim_edit_if_git_master(vals: str = "_default_value_") -> None:
+    """
+    Direct commits to git master are taboo and often a bad idea... for instance,
+    what if two people direct commit simultaneously to the same file in master?
+
+    other discussion here -> https://stackoverflow.com/a/45791560/667301
+    """
+    assert vals == "_default_value_"
+
+    assert has_git_cli() is True
+
+
+    # Configure git mergetool
+    configure_git_mergetool()
+
+    git_branch = find_git_branch_name(filepath=sys.argv[-1])
+    if vim_write_mode() and (git_branch in set({"main", "master"})):
+
+        warning_message = "{4} You are going to modify file '{0}{1}{6}' on the {5}{2}git {3}{6} branch.".format(
+            BOLD_CYAN,                     # position 0
+            sys.argv[-1],                  # position 1
+            BOLD_YELLOW,                   # position 2
+            git_branch,                    # position 3
+            log_level_string("warning"),   # position 4
+            BG_RED,                        # position 5
+            ENDC,                          # position 6
+        )
+        print(warning_message)
+
+        # Confirm that we really want to edit in the master / main branch...
+        confirm_text = "    ^^^ {0}Are you sure?{1} (y / N) ".format(BOLD_WHITE, ENDC)
+        answer = getchar(confirm_text).strip()
+        if not (answer == "y"):
+            print("exiting")
+            sys.exit(0)
+
+        else:
+            message = "{5} Editing '{0}{1}{7}' on the {2}git '{4}'{7} branch. {3}The '{4}' branch {6}{7}".format(
+                BOLD_CYAN,                  # position 0
+                sys.argv[-1],               # position 1
+                BOLD_YELLOW,                # position 2
+                BOLD_GREEN,                 # position 3
+                git_branch,                 # position 4
+                log_level_string("info"),   # position 5
+                "LGTM.",                    # position 6
+                ENDC,                       # position 7
+            )
+            print(message)
+            run_vim()
+
+    else:
+        if git_branch != "":
+            message = "{5} Editing '{0}{1}{7}' on the {2}git '{4}'{7} branch. {3}The '{4}' branch {6}{7}".format(
+                BOLD_CYAN,                  # position 0
+                sys.argv[-1],               # position 1
+                BOLD_YELLOW,                # position 2
+                BOLD_GREEN,                 # position 3
+                git_branch,                 # position 4
+                log_level_string("info"),   # position 5
+                "LGTM.",                    # position 6
+                ENDC,                       # position 7
+            )
+        else:
+            message = "{} Editing '{}{}{}'.".format(
+                log_level_string("info"),
+                BOLD_CYAN,
+                sys.argv[-1],
+                ENDC,
+            )
+        print(message)
+        run_vim()
+
+
+if __name__ == "__main__":
+    # TODO - check for timed running (macOS)
+    ntp_ok = confirm_vim_ntp_running()
+<<<<<<< HEAD
+    if ntp_ok is False:
+        # We can skip the chrony check if the system syncs time with ntp...
+        chrony_ok = confirm_vim_chrony_running()
+||||||| 66865aa
+    chrony_ok = confirm_vim_chrony_running()
+=======
+    if (ntp_ok is False) or (ntp_ok is None):
+        chrony_ok = confirm_vim_chrony_running()
+
+>>>>>>> develop
+    git_ok = confirm_vim_edit_if_git_master()
