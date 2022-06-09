@@ -14,6 +14,7 @@ I went out of my way to write this with only python3 stdlib dependencies.
 """
 
 from fnmatch import translate as fn_xlate
+from datetime import datetime as dt
 from argparse import ArgumentParser
 from subprocess import Popen, PIPE
 import fileinput
@@ -174,8 +175,13 @@ def run_vim(vals: str = "") -> None:
         os.system("vim")
 
 
+def get_datetime_string() -> str:
+    return str(dt.now())
+
 def log_level_string(log_level: str = "DEBUG") -> str:
     """
+    Add a timestamp to the returned string.
+
     Return a colorized log level string.
     """
     assert isinstance(log_level, str)
@@ -190,8 +196,7 @@ def log_level_string(log_level: str = "DEBUG") -> str:
     }
     assert log_level.upper() in set(color_dict.keys())
 
-    return "\u001b[37;1m" + "[" + log_level.upper() + "]" + "\033[0m"
-
+    return get_datetime_string() + "\u001b[37;1m" + "[" + log_level.upper() + "]" + "\033[0m"
 
 def run_cmd_popen(
     cmd: str = "",
