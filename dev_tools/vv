@@ -321,7 +321,7 @@ def confirm_vim_ntp_running(vals: str = "_default_value_") -> bool:
             break
 
     if ntp_sync_bool is False:
-        ntp_message = "{3} {0}`{4}`{6} {5}status did not return {2}'sync_ntp'.{6}  {2}An inaccurate file timestamp could confuse others.{6}".format(
+        ntp_message = "{3} {0}`{4}`{6} {5}status did not return {2}'sync_ntp'.{6}  {2}An inaccurate git timestamp could confuse others.{6}".format(
             BOLD_CYAN,                      # position 0
             sys.argv[-1],                   # position 1
             BOLD_YELLOW,                    # position 2
