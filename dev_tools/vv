@@ -421,7 +421,7 @@ def confirm_vim_edit_if_git_master(vals: str = "_default_value_") -> None:
     git_branch = find_git_branch_name(filepath=sys.argv[-1])
     if vim_write_mode() and (git_branch in set({"main", "master"})):
 
-        warning_message = "{4} You are going to modify file '{0}{1}{6}' on the {5}{2}git {3}{6} branch.  Most seasoned developers avoid direct commits to the '{3}' branch.".format(
+        warning_message = "{4} Modifing '{0}{1}{6}' on the {5}{2}git {3}{6} branch.  Most devs avoid direct commits to the git '{3}' branch.".format(
             BOLD_CYAN,                     # position 0
             sys.argv[-1],                  # position 1
             BOLD_YELLOW,                   # position 2
