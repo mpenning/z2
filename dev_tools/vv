@@ -178,7 +178,7 @@ def run_vim(vals: str = "") -> None:
 def get_datetime_string() -> str:
     return str(dt.now())
 
-def log_level_string(log_level: str = "DEBUG") -> str:
+def log_level_string(log_level: str = "DEBUG", add_timestamp: bool = True) -> str:
     """
     Add a timestamp to the returned string.
 
@@ -196,7 +196,11 @@ def log_level_string(log_level: str = "DEBUG") -> str:
     }
     assert log_level.upper() in set(color_dict.keys())
 
-    return get_datetime_string() + " " + "\u001b[37;1m" + "[" + log_level.upper() + "]" + "\033[0m"
+    if add_timestamp is True:
+        return get_datetime_string() + " " + "\u001b[37;1m" + "[" + log_level.upper() + "]" + "\033[0m"
+
+    else:
+        return "\u001b[37;1m" + "[" + log_level.upper() + "]" + "\033[0m"
 
 def run_cmd_popen(
     cmd: str = "",
