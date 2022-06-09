@@ -468,15 +468,10 @@ def confirm_vim_edit_if_git_master(vals: str = "_default_value_") -> None:
 if __name__ == "__main__":
     # TODO - check for timed running (macOS)
     ntp_ok = confirm_vim_ntp_running()
-<<<<<<< HEAD
-    if ntp_ok is False:
+
+    chrony_ok = False
+    if (ntp_ok is False) or (ntp_ok is None):
         # We can skip the chrony check if the system syncs time with ntp...
         chrony_ok = confirm_vim_chrony_running()
-||||||| 66865aa
-    chrony_ok = confirm_vim_chrony_running()
-=======
-    if (ntp_ok is False) or (ntp_ok is None):
-        chrony_ok = confirm_vim_chrony_running()
 
->>>>>>> develop
     git_ok = confirm_vim_edit_if_git_master()
