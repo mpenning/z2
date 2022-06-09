@@ -1,4 +1,11 @@
 
+Version 0.0.32
+--------------
+
+Released 2022-06-09
+
+- Enhance and clarify the `dev_tools/vv` log messages
+
 Version 0.0.31
 --------------
 
