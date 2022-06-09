@@ -26,7 +26,7 @@ import re
 import os
 
 assert sys.version_info > (3, 0), "FATAL python2 is not supported"
-assert sys.version_info >= (3, 4), "pathlib usage requires Python3.4 or higher"
+assert sys.version_info >= (3, 5), "python type hints are only supported in Python >= 3.5"
 
 # Set some terminal color globals
 WARNING = "\033[93m"
@@ -468,7 +468,15 @@ def confirm_vim_edit_if_git_master(vals: str = "_default_value_") -> None:
 if __name__ == "__main__":
     # TODO - check for timed running (macOS)
     ntp_ok = confirm_vim_ntp_running()
+<<<<<<< HEAD
+    if ntp_ok is False:
+        # We can skip the chrony check if the system syncs time with ntp...
+        chrony_ok = confirm_vim_chrony_running()
+||||||| 66865aa
+    chrony_ok = confirm_vim_chrony_running()
+=======
     if (ntp_ok is False) or (ntp_ok is None):
         chrony_ok = confirm_vim_chrony_running()
 
+>>>>>>> develop
     git_ok = confirm_vim_edit_if_git_master()
