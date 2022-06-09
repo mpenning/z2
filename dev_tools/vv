@@ -196,7 +196,7 @@ def log_level_string(log_level: str = "DEBUG") -> str:
     }
     assert log_level.upper() in set(color_dict.keys())
 
-    return get_datetime_string() + "\u001b[37;1m" + "[" + log_level.upper() + "]" + "\033[0m"
+    return get_datetime_string() + " " + "\u001b[37;1m" + "[" + log_level.upper() + "]" + "\033[0m"
 
 def run_cmd_popen(
     cmd: str = "",
