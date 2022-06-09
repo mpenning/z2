@@ -17,6 +17,7 @@ from fnmatch import translate as fn_xlate
 from datetime import datetime as dt
 from argparse import ArgumentParser
 from subprocess import Popen, PIPE
+from time import strftime
 import fileinput
 import pathlib
 import termios
@@ -176,7 +177,8 @@ def run_vim(vals: str = "") -> None:
 
 
 def get_datetime_string() -> str:
-    return str(dt.now())
+    #return str(dt.now())
+    return str(dt.now().strftime("%Y-%m-%d %H:%M:%S"))
 
 def log_level_string(log_level: str = "DEBUG", add_timestamp: bool = True) -> str:
     """
