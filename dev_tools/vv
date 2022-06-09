@@ -71,8 +71,8 @@ def find_files(
 
 
 def replace_in_files(
-    search_rgx: str=None,
-    replace: str=None,
+    search_rgx: str="",
+    replace: str="",
     filespec: str="*",
     change_git_master: bool=False,
     debug: int=0
@@ -228,7 +228,16 @@ def run_cmd_popen(
             raise FileNotFoundError("'%s' is not in the PATH." % cmd.split()[0])
 
         else:
-            print("'%s' is not in the PATH or is not installed" % base_cmd)
+            message = "{3} {0}`{4}`{6} {5}is not in the env {2}PATH{6}{2}{5} variable, or is not installed.{6}".format(
+                BOLD_CYAN,                      # position 0
+                sys.argv[-1],                   # position 1
+                BOLD_YELLOW,                    # position 2
+                log_level_string("warning"),    # position 3
+                base_cmd,                       # position 4
+                BG_RED,                         # position 5
+                ENDC,                           # position 6
+            )
+            print(message)
 
     retval = {
         "cmd": cmd,
@@ -279,6 +288,7 @@ def configure_git_mergetool():
     for cmd_line in config:
         run_cmd_popen(cmd=cmd_line, throw_errors=False)
 
+
 def has_git_cli():
     """
     Run a simple check that the git cli is available on this system.
@@ -290,6 +300,7 @@ def has_git_cli():
 
     return "git version" in retval_dict["stdout"][0]
 
+
 def confirm_vim_ntp_running(vals: str = "_default_value_") -> bool:
     """
     Check that ntp is running on the system.  Warn if ntp is not running.
@@ -297,9 +308,16 @@ def confirm_vim_ntp_running(vals: str = "_default_value_") -> bool:
     ntp_cmd = "ntpq -c rv"
     stdout_lines = run_cmd_popen(ntp_cmd, throw_errors=False).get("stdout", "__cmd_fail__")
     ntp_sync_bool = False
+    ntp_status = ""
     for line in stdout_lines:
         if "sync_ntp" in line:
+            ntp_status = "sync_ntp"
             ntp_sync_bool = True
+            break
+
+        elif "sync_unspec" in line:
+            ntp_status = "sync_unspec"
+            ntp_sync_bool = False
             break
 
     if ntp_sync_bool is False:
@@ -315,7 +333,7 @@ def confirm_vim_ntp_running(vals: str = "_default_value_") -> bool:
         print(ntp_message)
 
     else:
-        ntp_message = "{3} {0}`{4}`{6} returns status '{2}sync_ntp{6}'; {5}ntpq appears to be sync'd.{6}".format(
+        ntp_message = "{3} {0}`{4}`{6} returned status: '{2}sync_ntp{6}'; {5}ntpq appears to be sync'd.{6}".format(
             BOLD_CYAN,                      # position 0
             sys.argv[-1],                   # position 1
             BOLD_YELLOW,                    # position 2
@@ -335,6 +353,7 @@ def confirm_vim_chrony_running(vals: str = "_default_value_") -> bool:
     chrony_cmd = "chronyc tracking"
     stdout_lines = run_cmd_popen(chrony_cmd, throw_errors=False).get("stdout", "__cmd_fail__")
     chrony_sync_bool = False
+    reference_id = None
     for line in stdout_lines:
         mm = re.search(r"Reference\s+ID\s*:\s+(\S+)\b", line, re.I)
         if mm is not None:
@@ -358,7 +377,7 @@ def confirm_vim_chrony_running(vals: str = "_default_value_") -> bool:
         print(chrony_message)
 
     else:
-        chrony_message = "{3} {0}`{4}`{7} returns status '{2}Reference ID: {6}{7}'; {5}chrony appears to be sync'd.{7}".format(
+        chrony_message = "{3} {0}`{4}`{7} returned status '{2}Reference ID: {6}{7}'; {5}chrony appears to be sync'd.{7}".format(
             BOLD_CYAN,                        # position 0
             sys.argv[-1],                     # position 1
             BOLD_YELLOW,                      # position 2
@@ -410,28 +429,30 @@ def confirm_vim_edit_if_git_master(vals: str = "_default_value_") -> None:
             sys.exit(0)
 
         else:
-            message = "{5} Editing '{0}{1}{6}' on the {2}git {4}{6} branch. {3}LGTM.{6}".format(
+            message = "{5} Editing '{0}{1}{7}' on the {2}git '{4}'{7} branch. {3}The '{4}' branch {6}{7}".format(
                 BOLD_CYAN,                  # position 0
                 sys.argv[-1],               # position 1
                 BOLD_YELLOW,                # position 2
                 BOLD_GREEN,                 # position 3
                 git_branch,                 # position 4
                 log_level_string("info"),   # position 5
-                ENDC,                       # position 6
+                "LGTM.",                    # position 6
+                ENDC,                       # position 7
             )
             print(message)
             run_vim()
 
     else:
         if git_branch != "":
-            message = "{5} Editing '{0}{1}{6}' on the {2}git {4}{6} branch. {3}LGTM.{6}".format(
+            message = "{5} Editing '{0}{1}{7}' on the {2}git '{4}'{7} branch. {3}The '{4}' branch {6}{7}".format(
                 BOLD_CYAN,                  # position 0
                 sys.argv[-1],               # position 1
                 BOLD_YELLOW,                # position 2
                 BOLD_GREEN,                 # position 3
                 git_branch,                 # position 4
                 log_level_string("info"),   # position 5
-                ENDC,                       # position 6
+                "LGTM.",                    # position 6
+                ENDC,                       # position 7
             )
         else:
             message = "{} Editing '{}{}{}'.".format(
@@ -447,5 +468,7 @@ def confirm_vim_edit_if_git_master(vals: str = "_default_value_") -> None:
 if __name__ == "__main__":
     # TODO - check for timed running (macOS)
     ntp_ok = confirm_vim_ntp_running()
-    chrony_ok = confirm_vim_chrony_running()
+    if (ntp_ok is False) or (ntp_ok is None):
+        chrony_ok = confirm_vim_chrony_running()
+
     git_ok = confirm_vim_edit_if_git_master()
