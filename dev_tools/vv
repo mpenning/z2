@@ -1,6 +1,9 @@
 #!/usr/bin/env python3
 
 """
+Copyright (C) 2022 WellSky
+Copyright (C) 2022 David Michael Pennington (before 6 Jun 2022)
+
 vv: a vim wrapper that:
 - warns you if you try to edit git master or git main
 - warns you if ntp is not sync'd
