@@ -435,20 +435,18 @@ def confirm_vim_edit_if_git_master(vals: str = "_default_value_") -> None:
         # Confirm that we really want to edit in the master / main branch...
         confirm_text = "    ^^^ {0}Are you sure?{1} (y / N) ".format(BOLD_WHITE, ENDC)
         answer = getchar(confirm_text).strip()
-        if not (answer == "y"):
+        if (answer.lower() != "y"):
             print("exiting")
             sys.exit(0)
 
         else:
-            message = "{5} Editing '{0}{1}{7}' on the {2}git '{4}'{7} branch. {3}The '{4}' branch {6}{7}".format(
+            message = "{4} Editing '{0}{1}{5}' on the {2}git '{3}'{5} branch.".format(
                 BOLD_CYAN,                  # position 0
                 sys.argv[-1],               # position 1
                 BOLD_YELLOW,                # position 2
-                BOLD_GREEN,                 # position 3
-                git_branch,                 # position 4
-                log_level_string("info"),   # position 5
-                "LGTM.",                    # position 6
-                ENDC,                       # position 7
+                git_branch,                 # position 3
+                log_level_string("info"),   # position 4
+                ENDC,                       # position 5
             )
             print(message)
             run_vim()
