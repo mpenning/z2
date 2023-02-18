@@ -319,7 +319,7 @@ def has_git_cli():
     return "git version" in retval_dict["stdout"][0]
 
 
-def confirm_vim_ntp_running(vals: str = "_default_value_") -> bool:
+def confirm_ntp_running(vals: str = "_default_value_") -> bool:
     """
     Check that ntp is running on the system.  Warn if ntp is not running.
     """
@@ -364,7 +364,7 @@ def confirm_vim_ntp_running(vals: str = "_default_value_") -> bool:
 
     return ntp_sync_bool
 
-def confirm_vim_chrony_running(vals: str = "_default_value_") -> bool:
+def confirm_chrony_running(vals: str = "_default_value_") -> bool:
     """
     Check that chrony is running on the system.  Warn if chrony is not running.
     """
@@ -410,7 +410,7 @@ def confirm_vim_chrony_running(vals: str = "_default_value_") -> bool:
     return chrony_sync_bool
 
 
-def confirm_vim_edit_if_git_master(vals: str = "_default_value_") -> None:
+def confirm_edit_if_git_master(vals: str = "_default_value_") -> None:
     """
     Direct commits to git master are taboo and often a bad idea... for instance,
     what if two people direct commit simultaneously to the same file in master?
@@ -483,11 +483,11 @@ def confirm_vim_edit_if_git_master(vals: str = "_default_value_") -> None:
 
 if __name__ == "__main__":
     # TODO - check for timed running (macOS)
-    ntp_ok = confirm_vim_ntp_running()
+    ntp_ok = confirm_ntp_running()
 
     chrony_ok = False
     if (ntp_ok is False) or (ntp_ok is None):
         # We can skip the chrony check if the system syncs time with ntp...
-        chrony_ok = confirm_vim_chrony_running()
+        chrony_ok = confirm_chrony_running()
 
-    git_ok = confirm_vim_edit_if_git_master()
+    git_ok = confirm_edit_if_git_master()
