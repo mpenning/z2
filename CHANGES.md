@@ -1,4 +1,11 @@
 
+Version 0.0.33
+--------------
+
+Released 2023-02-18
+
+- Cosmetic improvements to `dev_tools/vv`
+
 Version 0.0.32
 --------------
 
