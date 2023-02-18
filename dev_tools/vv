@@ -183,7 +183,6 @@ def run_vim(vals: str = "") -> None:
 
 
 def get_datetime_string() -> str:
-    #return str(dt.now())
     return str(dt.now().strftime("%Y-%m-%d %H:%M:%S"))
 
 def log_level_string(log_level: str = "DEBUG", add_timestamp: bool = True) -> str:
