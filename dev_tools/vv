@@ -117,6 +117,7 @@ def getchar(text: str = "") -> str:
     """Read a single character from the user"""
     assert isinstance(text, str)
     fd_stdin = sys.stdin.fileno()
+    single_char = None      # Initialize variable
 
     oldterm = termios.tcgetattr(fd_stdin)
     newattr = termios.tcgetattr(fd_stdin)
@@ -128,9 +129,9 @@ def getchar(text: str = "") -> str:
 
     # print("this", end="") end param ensures there's no automatic newline...
     #     Ref -> https://stackoverflow.com/a/493399/667301
-    # Sometimes you need flush() to make the print() work
-
     print(text, end="")
+
+    # Sometimes you need flush() to make the print() work
     sys.stdout.flush()
 
     try:
@@ -147,6 +148,7 @@ def getchar(text: str = "") -> str:
     print("")  # Move the cursor back to the far-left of terminal...
     sys.stdout.flush()
 
+    assert isinstance(single_char, str)   # Forbid the default None value
     return single_char
 
 
