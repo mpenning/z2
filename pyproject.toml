@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "z2"
-version = "0.0.31"
+version = "0.0.33"
 description = "A set of tools"
 authors = ["Mike Pennington <mike@pennington.net>"]
 license = "BSD-3-Clause"

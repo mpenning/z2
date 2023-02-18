@@ -1,7 +1,8 @@
 #!/usr/bin/env python3
 
 """
-Copyright (C) 2022 WellSky
+Copyright (C) 2022-2023 David Michael Pennington (after 18 Oct 2022)
+Copyright (C) 2022 David Michael Pennington and WellSky
 Copyright (C) 2022 David Michael Pennington (before 6 Jun 2022)
 
 vv: a vim wrapper that:
@@ -115,6 +116,7 @@ def getchar(text: str = "") -> str:
     """Read a single character from the user"""
     assert isinstance(text, str)
     fd_stdin = sys.stdin.fileno()
+    single_char = None      # Initialize variable
 
     oldterm = termios.tcgetattr(fd_stdin)
     newattr = termios.tcgetattr(fd_stdin)
@@ -126,9 +128,9 @@ def getchar(text: str = "") -> str:
 
     # print("this", end="") end param ensures there's no automatic newline...
     #     Ref -> https://stackoverflow.com/a/493399/667301
-    # Sometimes you need flush() to make the print() work
-
     print(text, end="")
+
+    # Sometimes you need flush() to make the print() work
     sys.stdout.flush()
 
     try:
@@ -145,6 +147,7 @@ def getchar(text: str = "") -> str:
     print("")  # Move the cursor back to the far-left of terminal...
     sys.stdout.flush()
 
+    assert isinstance(single_char, str)   # Forbid the default None value
     return single_char
 
 
@@ -180,7 +183,6 @@ def run_vim(vals: str = "") -> None:
 
 
 def get_datetime_string() -> str:
-    #return str(dt.now())
     return str(dt.now().strftime("%Y-%m-%d %H:%M:%S"))
 
 def log_level_string(log_level: str = "DEBUG", add_timestamp: bool = True) -> str:
@@ -315,7 +317,7 @@ def has_git_cli():
     return "git version" in retval_dict["stdout"][0]
 
 
-def confirm_vim_ntp_running(vals: str = "_default_value_") -> bool:
+def confirm_ntp_running(vals: str = "_default_value_") -> bool:
     """
     Check that ntp is running on the system.  Warn if ntp is not running.
     """
@@ -360,7 +362,7 @@ def confirm_vim_ntp_running(vals: str = "_default_value_") -> bool:
 
     return ntp_sync_bool
 
-def confirm_vim_chrony_running(vals: str = "_default_value_") -> bool:
+def confirm_chrony_running(vals: str = "_default_value_") -> bool:
     """
     Check that chrony is running on the system.  Warn if chrony is not running.
     """
@@ -406,7 +408,7 @@ def confirm_vim_chrony_running(vals: str = "_default_value_") -> bool:
     return chrony_sync_bool
 
 
-def confirm_vim_edit_if_git_master(vals: str = "_default_value_") -> None:
+def confirm_edit_if_git_master(vals: str = "_default_value_") -> None:
     """
     Direct commits to git master are taboo and often a bad idea... for instance,
     what if two people direct commit simultaneously to the same file in master?
@@ -479,11 +481,11 @@ def confirm_vim_edit_if_git_master(vals: str = "_default_value_") -> None:
 
 if __name__ == "__main__":
     # TODO - check for timed running (macOS)
-    ntp_ok = confirm_vim_ntp_running()
+    ntp_ok = confirm_ntp_running()
 
     chrony_ok = False
     if (ntp_ok is False) or (ntp_ok is None):
         # We can skip the chrony check if the system syncs time with ntp...
-        chrony_ok = confirm_vim_chrony_running()
+        chrony_ok = confirm_chrony_running()
 
-    git_ok = confirm_vim_edit_if_git_master()
+    git_ok = confirm_edit_if_git_master()
